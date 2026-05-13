@@ -1,62 +1,67 @@
-import os
 import json
+import os
+import uuid
 from datetime import datetime
 
-class BaseClass:
-    def __init__(self, id):
-        self.id = id
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
 
-    def filename(self):
-        return f"{self.id}.json"
+class LibraryItem:
+    def __init__(self, filename):
+        self.id = str(uuid.uuid4())
+        self.created_at = datetime.now().isoformat()
+        self.updated_at = datetime.now().isoformat()
+        self._filename = f"{filename}.json"
 
     def save(self):
-        data = self.__dict__
-        with open(self.filename(), 'w') as f:
-            json.dump(data, f, default=str, indent=2)
+        if os.path.exists(self._filename):
+            with open(self._filename) as f:
+                old = json.load(f)
+            self.id = old["id"]
+            self.created_at = old["created_at"]
+            self.updated_at = datetime.now().isoformat()
 
-    def load_or_save(self):
-        if os.path.exists(self.filename()):
-            with open(self.filename(), 'r') as f:
-                self.__dict__.update(json.load(f))
-        else:
-            self.save()
-
-    def touch(self):
-        self.updated_at = datetime.now()
-        self.save()
+        data = {k: v for k, v in self.__dict__.items() if k != "_filename"}
+        with open(self._filename, "w") as f:
+            json.dump(data, f, indent=2)
+        print(f"Saved {self._filename}")
 
 
-class Book(BaseClass):
-    def __init__(self, id, title, author, year, genre):
-        super().__init__(id)
+class Book(LibraryItem):
+    def __init__(self, title, author, year, genre):
+        super().__init__(title)
         self.title = title
         self.author = author
         self.year = year
         self.genre = genre
-        self.available = True
-        self.load_or_save()
+        self.is_borrowed = False
 
 
-class User(BaseClass):
-    def __init__(self, id, name):
-        super().__init__(id)
+class User(LibraryItem):
+    def __init__(self, name):
+        super().__init__(name)
         self.name = name
-        self.load_or_save()
 
     def borrow_book(self, book):
-        if book.available:
-            book.available = False
-            book.touch()
+        if not book.is_borrowed:
+            book.is_borrowed = True
+            print(f"{self.name} has borrowed '{book.title}'")
         else:
-            print(f"'{book.title}' is already borrowed")
+            print(f"Sorry, '{book.title}' is currently unavailable.")
 
 
-book1 = Book("b1", "Dune", "Frank Herbert", 1965, "Sci-Fi")
-alice = User("u1", "Alice")
-bob = User("u2", "Bob")
+bookOne = Book("The Alchemist", "Paulo Coelho", 1988, "Fiction")
+bookTwo = Book("Brave New World", "Aldous Huxley", 1932, "Dystopian")
+bookThree = Book("The Catcher in the Rye", "J.D. Salinger", 1951, "Classic")
 
-alice.borrow_book(book1) 
-bob.borrow_book(book1) 
-print(book1.available)    
+userOne = User("Alice")
+
+userOne.borrow_book(bookOne)
+userOne.borrow_book(bookTwo)
+
+bookOne.save()
+bookTwo.save()
+bookThree.save()
+userOne.save()
+
+print(bookOne.is_borrowed)   # True
+print(bookTwo.is_borrowed)   # True
+print(bookThree.is_borrowed) # False
