@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 
-class LibraryItem:
+class Base:
     def __init__(self, filename):
         self.id = str(uuid.uuid4())
         self.created_at = datetime.now().isoformat()
@@ -25,7 +25,7 @@ class LibraryItem:
         print(f"Saved {self._filename}")
 
 
-class Book(LibraryItem):
+class Book(Base):
     def __init__(self, title, author, year, genre):
         super().__init__(title)
         self.title = title
@@ -35,7 +35,7 @@ class Book(LibraryItem):
         self.is_borrowed = False
 
 
-class User(LibraryItem):
+class User(Base):
     def __init__(self, name):
         super().__init__(name)
         self.name = name
